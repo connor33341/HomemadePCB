@@ -1,0 +1,42 @@
+import pcbnew
+import os
+import uuid
+import shutil
+
+class ExportPlugin(pcbnew.ActionPlugin):
+    def defaults(self):
+        self.name = "Export Copper Traces and STEP"
+        self.category = "Export"
+        self.description = "Exports copper traces and a STEP file without copper traces to a specific directory"
+
+    def Run(self):
+        # Generate a unique identifier
+        export_uuid = str(uuid.uuid4())
+        export_path = os.path.join(pcbnew.GetProject().GetOutputPath(), "exports", export_uuid)
+        
+        # Create export directory
+        os.makedirs(export_path, exist_ok=True)
+
+        # Get the current board
+        board = pcbnew.GetBoard()
+
+        # Export STEP file without copper traces
+        self.export_step_file(board, export_path, with_copper=False)
+
+        # Export STEP file with copper traces
+        self.export_step_file(board, export_path, with_copper=True)
+
+        pcbnew.Refresh()
+
+    def export_step_file(self, board, export_path, with_copper):
+        if with_copper:
+            step_file_path = os.path.join(export_path, "board_with_copper.step")
+        else:
+            step_file_path = os.path.join(export_path, "board_without_copper.step")
+        
+        step_exporter = pcbnew.EXPORTER_STEP(board)
+        step_exporter.SetExportCoppers(with_copper)
+        step_exporter.Write(step_file_path)
+
+# Register the plugin
+ExportPlugin().register()
